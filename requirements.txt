@@ -1,0 +1,6 @@
+transformers
+librosa
+datasets
+tqdm
+tensorboard
+tensorboardX
