@@ -5,3 +5,4 @@ runs/
 cricket_data.pt
 __pycache__/
 cricket_data_feature_extracted.pt
+sdata/
