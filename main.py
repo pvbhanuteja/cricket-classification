@@ -10,9 +10,15 @@ from tqdm import tqdm
 
 
 # Load the dataset
-dataset = CustomDataset(data_path='./cricket_data.pt', type='main')
+dataset = CustomDataset(data_path='cricket_data_feature_extracted.pt', type='main')
 generator = torch.Generator().manual_seed(42)
 
+label2id = dataset.label2id
+id2label = dataset.id2label
+
+num_classes = len(label2id)
+
+print("Number of classes: ", num_classes)
 # Set the train-test split ratio
 train_ratio = 0.8
 train_size = int(train_ratio * len(dataset))
@@ -21,7 +27,7 @@ test_size = len(dataset) - train_size
 # Split the dataset into train and test sets
 train_set, test_set = random_split(
     dataset, [train_size, test_size], generator=generator)
-batch_size = 32
+batch_size = 2
 train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
@@ -29,7 +35,7 @@ test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 feature_extractor = AutoFeatureExtractor.from_pretrained(
     "MIT/ast-finetuned-audioset-10-10-0.4593")
 model = ASTForAudioClassification.from_pretrained(
-    "MIT/ast-finetuned-audioset-10-10-0.4593")
+    "MIT/ast-finetuned-audioset-10-10-0.4593", num_labels=3)
 
 # Set up the device for training
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,16 +54,21 @@ for epoch in tqdm(range(num_epochs)):
     model.train()
     running_loss = 0.0
 
-    for idx, (waveform_array, labels) in enumerate(train_loader):
-        waveform_array, labels = waveform_array.to(device), labels.to(device)
-        inputs = feature_extractor(
-            waveform_array, sampling_rate=SR, return_tensors="pt")
-        inputs = {key: value.to(device) for key, value in inputs.items()}
-
+    for idx, (inputs, labels) in enumerate(train_loader):
+        print("shape of waveform_array: ", inputs.shape)
+        inputs = inputs.to(device)
+        labels = labels.to(device)
+        
+        print("shape of inputs: ", inputs.shape, inputs.dtype)
         optimizer.zero_grad()
 
-        outputs = model(**inputs)
+        outputs = model(inputs)
+        print("shape of outputs: ", outputs.logits.shape)
         logits = outputs.logits
+        print("logits tensor: ", logits)
+        print("labels tensor: ", labels)
+        print("logits grad_fn: ", logits.grad_fn)
+
         loss = criterion(logits, labels)
 
         loss.backward()
@@ -85,7 +96,7 @@ for epoch in tqdm(range(num_epochs)):
                 waveform_array, sampling_rate=SR, return_tensors="pt")
             inputs = {key: value.to(device) for key, value in inputs.items()}
 
-            outputs = model(**inputs)
+            outputs = model(inputs)
             logits = outputs.logits
             _, predicted = torch.max(logits, dim=1)
 

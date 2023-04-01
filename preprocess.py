@@ -1,47 +1,36 @@
 import os
-import torchaudio, torch
+import torchaudio
+import torch
 from utils import remove_human_voice
-# Loading the cricket audio .wav files into waveform list
-wav_dir = "/Users/bhanu/repos/ast_classification/data/"
+from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
 
-waveform_list = []
-num_iter = 0
+wav_dir = "./data/"
 
 SR = 16000
+SECONDS_TO_TRIM = 10
+SECONDS_TO_OVERLAP = 5
 
-cricket_names = []  # use parallel array to keep track of cricket name for each audio file
-data = []
-for wav_file in sorted(os.listdir(wav_dir)):
-    num_iter += 1
+def process_wav_file(wav_file):
+    data = []
     label_name = ''
-    print("ITERATION NUMBER: ", str(num_iter), " FILE NAME: ", wav_file)
-    if 'mp3' in wav_file:
-        continue
-
-    # Xenogryllus MCL files (no species name) assumed to be Xenogryllus uniparitus species
+    
     if wav_file.find("Xenogryllus") != -1 and wav_file.find("(MCL)") != -1:
-        cricket_names.append("Xenogryllus" + " " + "unipartitus" + " " + "MCL")
         label_name = "Xenogryllus" + " " + "unipartitus" + " " + "MCL"
     else:
         split_file = wav_file.split(" ")
-        if wav_file.find("MCL") != -1:  # if file is from MCL
-            cricket_names.append(
-                split_file[2] + " " + split_file[3] + " " + "MCL")
+        if wav_file.find("MCL") != -1:
             label_name = split_file[2] + " " + split_file[3] + " " + "MCL"
-        else:  # if file is from SINA
-            cricket_names.append(
-                split_file[2] + " " + split_file[3] + " " + "SINA")
+        else:
             label_name = split_file[2] + " " + split_file[3] + " " + "SINA"
 
     waveform, sample_rate = torchaudio.load(wav_dir + wav_file)
-    wav = remove_human_voice(waveform, sample_rate)
-    print(wav.shape)
-    #trim 1 second from beginning and end of audio file
+    wav = remove_human_voice(waveform, sample_rate).squeeze(0)
     wav = wav[SR:-SR]
-    # convert above wav into a chunks of 15 seconds each with 5 seconds overlap
-    for i in range(0, len(wav), 5 * SR):
-        if i + 15 * SR < len(wav):
-            waveform = wav[i: i + 15 * SR]
+
+    for i in range(0, len(wav), SECONDS_TO_OVERLAP * SR):
+        if i + SECONDS_TO_TRIM * SR < len(wav):
+            waveform = wav[i: i + SECONDS_TO_TRIM * SR]
             data.append({"array": waveform.squeeze().numpy(), "label": label_name})
         else:
             waveform = wav[i: len(wav)]
@@ -49,6 +38,23 @@ for wav_file in sorted(os.listdir(wav_dir)):
                 continue
             else:
                 data.append({"array": waveform.squeeze().numpy(), "label": label_name})
-                
-# save the data list as a .pt file
-torch.save(data, "./cricket_data.pt")
+
+    return data
+
+def preprocess(wav_dir,n_jobs=cpu_count()):
+    wav_files = sorted(os.listdir(wav_dir))
+    data = []
+
+    with Pool(n_jobs) as pool:
+        results = pool.imap_unordered(process_wav_file, wav_files)
+
+        for result in tqdm(results, total=len(wav_files), desc="Processing wav files"):
+            data.extend(result)
+
+        pool.close()
+        pool.join()
+
+    torch.save(data, "./cricket_data.pt")
+if __name__ == "__main__":
+    preprocess(wav_dir,n_jobs=1)
+    print("done")
