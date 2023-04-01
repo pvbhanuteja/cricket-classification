@@ -87,8 +87,12 @@ trainer = Trainer(
     logger=logger,
     gradient_clip_val=1.0
 )
+num_workers = 40  # or another value based on your system's specifications
+train_loader = DataLoader(train_set, batch_size=8, shuffle=True, num_workers=num_workers)
+test_loader = DataLoader(test_set, batch_size=8, shuffle=False, num_workers=num_workers)
+
 # Train the model
-trainer.fit(classifier, DataLoader(train_set, batch_size=8, shuffle=True), DataLoader(test_set, batch_size=8, shuffle=False))
+trainer.fit(classifier, train_loader, test_loader)
 
 # Save the best model
 model_save_path = f"{logger.log_dir}/best_finetuned_ast_cricket_data.pt"
