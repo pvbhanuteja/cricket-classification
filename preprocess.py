@@ -98,6 +98,7 @@ def main():
 
     pprint(data)
     pprint(len(data))
+    torch.save(data, "./cricket_data.pt")
 
 
 if __name__ == '__main__':
