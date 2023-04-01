@@ -2,7 +2,7 @@ import os
 import torchaudio
 import torch
 from utils import remove_human_voice
-from multiprocessing import Pool, cpu_count
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 wav_dir = "./data/"
@@ -41,20 +41,17 @@ def process_wav_file(wav_file):
 
     return data
 
-def preprocess(wav_dir,n_jobs=cpu_count()):
+def preprocess(wav_dir, n_jobs=-1):
     wav_files = sorted(os.listdir(wav_dir))
     data = []
 
-    with Pool(n_jobs) as pool:
-        results = pool.imap_unordered(process_wav_file, wav_files)
+    results = Parallel(n_jobs=n_jobs)(delayed(process_wav_file)(wav_file) for wav_file in wav_files)
 
-        for result in tqdm(results, total=len(wav_files), desc="Processing wav files"):
-            data.extend(result)
-
-        pool.close()
-        pool.join()
+    for result in tqdm(results, total=len(wav_files), desc="Processing wav files"):
+        data.extend(result)
 
     torch.save(data, "./cricket_data.pt")
+
 if __name__ == "__main__":
-    preprocess(wav_dir,n_jobs=1)
+    preprocess(wav_dir)
     print("done")
