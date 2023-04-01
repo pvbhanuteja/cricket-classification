@@ -35,7 +35,7 @@ test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
 feature_extractor = AutoFeatureExtractor.from_pretrained(
     "MIT/ast-finetuned-audioset-10-10-0.4593")
 model = ASTForAudioClassification.from_pretrained(
-    "MIT/ast-finetuned-audioset-10-10-0.4593", num_labels=3)
+    "MIT/ast-finetuned-audioset-10-10-0.4593", label2id=label2id, id2label=id2label ,num_labels=num_classes,ignore_mismatched_sizes=True)
 
 # Set up the device for training
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -50,24 +50,19 @@ num_epochs = 10
 best_test_acc = 0.0
 # Create TensorBoard SummaryWriter
 writer = SummaryWriter("runs/cricket_experiment")
-for epoch in tqdm(range(num_epochs)):
+for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
 
     for idx, (inputs, labels) in enumerate(train_loader):
-        print("shape of waveform_array: ", inputs.shape)
+    
         inputs = inputs.to(device)
         labels = labels.to(device)
         
-        print("shape of inputs: ", inputs.shape, inputs.dtype)
         optimizer.zero_grad()
 
         outputs = model(inputs)
-        print("shape of outputs: ", outputs.logits.shape)
         logits = outputs.logits
-        print("logits tensor: ", logits)
-        print("labels tensor: ", labels)
-        print("logits grad_fn: ", logits.grad_fn)
 
         loss = criterion(logits, labels)
 
@@ -75,7 +70,7 @@ for epoch in tqdm(range(num_epochs)):
         optimizer.step()
 
         running_loss += loss.item()
-
+        print(f"Epoch [{epoch + 1}/{num_epochs}], Batch [{idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}", end="\r")
     # Calculate average training loss
     avg_train_loss = running_loss / len(train_loader)
     print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {avg_train_loss:.4f}")
@@ -89,13 +84,9 @@ for epoch in tqdm(range(num_epochs)):
     total_samples = 0
 
     with torch.no_grad():
-        for waveform_array, labels in test_loader:
-            waveform_array, labels = waveform_array.to(
-                device), labels.to(device)
-            inputs = feature_extractor(
-                waveform_array, sampling_rate=SR, return_tensors="pt")
-            inputs = {key: value.to(device) for key, value in inputs.items()}
-
+        for inputs, labels in test_loader:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
             outputs = model(inputs)
             logits = outputs.logits
             _, predicted = torch.max(logits, dim=1)
