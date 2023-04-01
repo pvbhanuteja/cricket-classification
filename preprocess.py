@@ -3,6 +3,7 @@ import torch
 import torchaudio
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pprint import pprint
+from tqdm import tqdm
 
 SR = 16000
 SECONDS_TO_TRIM = 10
@@ -92,9 +93,9 @@ def main():
         for wav_file in wav_files:
             futures.append(ex.submit(process_wav_file, wav_file))
 
-    for finished in as_completed(futures):
-        result = finished.result()
-        data.extend(result)
+        for finished in tqdm(as_completed(futures), total=len(futures), desc="Processing WAV files"):
+            result = finished.result()
+            data.extend(result)
 
     pprint(data)
     pprint(len(data))
