@@ -17,6 +17,8 @@ class CricketClassifier(LightningModule):
         self.model = ASTForAudioClassification.from_pretrained(
             "MIT/ast-finetuned-audioset-10-10-0.4593", label2id=label2id, id2label=id2label ,num_labels=num_classes,ignore_mismatched_sizes=True)
         self.criterion = nn.CrossEntropyLoss()
+        self.training_step_outputs = []
+        self.val_step_outputs = []
 
     def forward(self, x):
         return self.model(x)
@@ -37,10 +39,13 @@ class CricketClassifier(LightningModule):
         # self.log_gradients()
         metrics = {"train_loss_step": loss.item()}
         self.logger.log_metrics(metrics, step=self.global_step)
+        train_outputs = {"loss": loss, "labels": labels, "predictions": logits}
+        self.training_step_outputs.append(train_outputs)
         # print(f"Train Loss (step): {loss:.4f}", end="\r")
-        return {"loss": loss, "labels": labels, "predictions": logits}
+        return train_outputs
 
-    def on_train_epoch_end(self, outputs):
+    def on_train_epoch_end(self):
+        outputs = self.training_step_outputs
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         metrics = {"train_loss_epoch": avg_loss.item()}
         self.logger.log_metrics(metrics, step=self.current_epoch)
@@ -63,17 +68,20 @@ class CricketClassifier(LightningModule):
                 logger_instance.add_text(f"Last step predictions", last_step_predictions_str, global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
+        self.training_step_outputs.clear()
 
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
         outputs = self(inputs)
         logits = outputs.logits
         _, predicted = torch.max(logits, dim=1)
-
+        val_outputs = {"labels": labels, "predictions": predicted}
+        self.val_step_outputs.append(val_outputs)
         # Return values to be used in validation_epoch_end
-        return {"labels": labels, "predictions": predicted}
+        return val_outputs
     
-    def on_validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
+        outputs = self.val_step_outputs
         all_labels = torch.cat([x['labels'] for x in outputs], dim=0)
         all_predictions = torch.cat([x['predictions'] for x in outputs], dim=0)
 
@@ -100,6 +108,7 @@ class CricketClassifier(LightningModule):
         plt.colorbar(cax)
         self.logger.experiment[0].add_figure('Confusion Matrix', fig, global_step=self.current_epoch)
         self.logger.experiment[1].log_figure('Confusion Matrix', fig, step=self.current_epoch)
+        self.val_step_outputs.clear()
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=1e-4)
