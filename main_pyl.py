@@ -86,7 +86,7 @@ class CricketClassifier(LightningModule):
 
         # Calculate precision, recall, F1-score, and confusion matrix
         precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels.cpu(), all_predictions.cpu(), average='macro')
-        conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
+        # conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
 
         # Log metrics using logger.log_metrics method
         metrics = {
@@ -97,13 +97,13 @@ class CricketClassifier(LightningModule):
         }
         self.logger.log_metrics(metrics, step=self.global_step)
 
-        # Log confusion matrix (as an image)
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        cax = ax.matshow(conf_mat)
-        plt.colorbar(cax)
+        # # Log confusion matrix (as an image)
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # cax = ax.matshow(conf_mat)
+        # plt.colorbar(cax)
         
-        self.logger.experiment.add_image('Confusion Matrix', fig, global_step=self.current_epoch)
+        # self.logger.experiment.add_image('Confusion Matrix', fig, global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
