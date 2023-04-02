@@ -6,8 +6,10 @@ from dataset import CustomDataset
 from preprocess import SR
 from transformers import AutoFeatureExtractor, ASTForAudioClassification
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
 from tqdm import tqdm
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
+import matplotlib.pyplot as plt
 
 class CricketClassifier(LightningModule):
     def __init__(self, label2id, id2label, num_classes):
@@ -32,20 +34,72 @@ class CricketClassifier(LightningModule):
         loss = self.criterion(logits, labels)
 
         # Log and print gradients
-        self.log_gradients()
-        self.log('train_loss', loss)
-        print(f"Train Loss: {loss:.4f}", end="\r")
-        return loss
+        # self.log_gradients()
+        metrics = {"train_loss_step": loss.item()}
+        self.logger.log_metrics(metrics, step=self.global_step)
+        # print(f"Train Loss (step): {loss:.4f}", end="\r")
+        return {"loss": loss, "labels": labels, "predictions": logits}
+
+    def on_train_epoch_end(self, outputs):
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        metrics = {"train_loss_epoch": avg_loss.item()}
+        self.logger.log_metrics(metrics, step=self.current_epoch)
+        
+        # Log labels and predictions of the last step in the current epoch
+        last_step_outputs = outputs[-1]
+        last_step_labels = last_step_outputs["labels"].tolist()
+        last_step_predictions = torch.argmax(last_step_outputs["predictions"], dim=1).tolist()
+
+        # Log the last_step_labels and last_step_predictions as text
+        last_step_labels_str = ', '.join(map(str, last_step_labels))
+        last_step_predictions_str = ', '.join(map(str, last_step_predictions))
+
+        for logger_instance in self.logger.experiment:
+            if isinstance(logger_instance, CometLogger):
+                logger_instance.log_text(f"Last step labels: {last_step_labels_str}", step=self.current_epoch)
+                logger_instance.log_text(f"Last step predictions: {last_step_predictions_str}", step=self.current_epoch)
+            else:
+                logger_instance.add_text(f"Last step labels", last_step_labels_str, global_step=self.current_epoch)
+                logger_instance.add_text(f"Last step predictions", last_step_predictions_str, global_step=self.current_epoch)
+        
+        print(f"Train Loss (epoch): {avg_loss:.4f}")
 
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
         outputs = self(inputs)
         logits = outputs.logits
         _, predicted = torch.max(logits, dim=1)
-        accuracy = (predicted == labels).sum().item() / labels.size(0)
-        self.log('Test Accuracy', accuracy)
-        print(f"Test Accuracy: {accuracy:.4f}", end="\r")
-        return accuracy
+
+        # Return values to be used in validation_epoch_end
+        return {"labels": labels, "predictions": predicted}
+    
+    def on_validation_epoch_end(self, outputs):
+        all_labels = torch.cat([x['labels'] for x in outputs], dim=0)
+        all_predictions = torch.cat([x['predictions'] for x in outputs], dim=0)
+
+        # Calculate accuracy
+        accuracy = (all_predictions == all_labels).sum().item() / all_labels.size(0)
+
+        # Calculate precision, recall, F1-score, and confusion matrix
+        precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels.cpu(), all_predictions.cpu(), average='macro')
+        conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
+
+        # Log metrics using logger.log_metrics method
+        metrics = {
+            "val/accuracy": accuracy,
+            "val/precision": precision,
+            "val/recall": recall,
+            "val/f1_score": f1_score,
+        }
+        self.logger.log_metrics(metrics, step=self.global_step)
+
+        # Log confusion matrix (as an image)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(conf_mat)
+        plt.colorbar(cax)
+        self.logger.experiment[0].add_figure('Confusion Matrix', fig, global_step=self.current_epoch)
+        self.logger.experiment[1].log_figure('Confusion Matrix', fig, step=self.current_epoch)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=1e-4)
@@ -76,24 +130,24 @@ train_set, test_set = random_split(
 classifier = CricketClassifier(label2id, id2label, num_classes)
 
 # Set up TensorBoard logger
-logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
-
+tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
+comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
 # Initialize the Trainer
 trainer = Trainer(
     max_epochs=100,
     devices=2, 
     accelerator="gpu",
     strategy="ddp",
-    logger=logger,
+    logger=[tb_logger,comet_logger],
     gradient_clip_val=1.0
 )
 num_workers = 40  # or another value based on your system's specifications
-train_loader = DataLoader(train_set, batch_size=8, shuffle=True, num_workers=num_workers)
-test_loader = DataLoader(test_set, batch_size=8, shuffle=False, num_workers=num_workers)
+train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=num_workers)
+test_loader = DataLoader(test_set, batch_size=4, shuffle=False, num_workers=num_workers)
 
 # Train the model
 trainer.fit(classifier, train_loader, test_loader)
 
 # Save the best model
-model_save_path = f"{logger.log_dir}/best_finetuned_ast_cricket_data.pt"
+model_save_path = f"{tb_logger.log_dir}/best_finetuned_ast_cricket_data.pt"
 torch.save(classifier.model.state_dict(), model_save_path)
