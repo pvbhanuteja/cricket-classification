@@ -59,13 +59,9 @@ class CricketClassifier(LightningModule):
         last_step_labels_str = ', '.join(map(str, last_step_labels))
         last_step_predictions_str = ', '.join(map(str, last_step_predictions))
 
-        for logger_instance in self.logger:
-            if isinstance(logger_instance, CometLogger):
-                logger_instance.log_text(f"Last step labels: {last_step_labels_str}", step=self.current_epoch)
-                logger_instance.log_text(f"Last step predictions: {last_step_predictions_str}", step=self.current_epoch)
-            else:
-                logger_instance.add_text(f"Last step labels", last_step_labels_str, global_step=self.current_epoch)
-                logger_instance.add_text(f"Last step predictions", last_step_predictions_str, global_step=self.current_epoch)
+
+        self.logger.experiment.add_text(f"Last step labels", last_step_labels_str, global_step=self.current_epoch)
+        self.logger.experiment.add_text(f"Last step predictions", last_step_predictions_str, global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
         self.training_step_outputs.clear()
@@ -107,12 +103,7 @@ class CricketClassifier(LightningModule):
         cax = ax.matshow(conf_mat)
         plt.colorbar(cax)
         
-        for logger_instance in self.logger:
-            if isinstance(logger_instance, TensorBoardLogger):
-                logger_instance.experiment.add_figure('Confusion Matrix', fig, global_step=self.current_epoch)
-            elif isinstance(logger_instance, CometLogger):
-                logger_instance.experiment.log_figure('Confusion Matrix', fig, step=self.current_epoch)
-
+        self.logger.experiment.add_image('Confusion Matrix', fig, global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
@@ -146,14 +137,14 @@ classifier = CricketClassifier(label2id, id2label, num_classes)
 
 # Set up TensorBoard logger
 tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
-comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
+# comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
 # Initialize the Trainer
 trainer = Trainer(
     max_epochs=100,
     devices=2, 
     accelerator="gpu",
     strategy="ddp",
-    logger=[tb_logger,comet_logger],
+    logger=tb_logger,
     gradient_clip_val=1.0
 )
 num_workers = 40  # or another value based on your system's specifications
