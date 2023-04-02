@@ -106,8 +106,13 @@ class CricketClassifier(LightningModule):
         ax = fig.add_subplot(111)
         cax = ax.matshow(conf_mat)
         plt.colorbar(cax)
-        self.logger.experiment[0].add_figure('Confusion Matrix', fig, global_step=self.current_epoch)
-        self.logger.experiment[1].log_figure('Confusion Matrix', fig, step=self.current_epoch)
+        
+        for logger_instance in self.logger.experiment:
+            if isinstance(logger_instance, TensorBoardLogger):
+                logger_instance.add_figure('Confusion Matrix', fig, global_step=self.current_epoch)
+            elif isinstance(logger_instance, CometLogger):
+                logger_instance.log_figure('Confusion Matrix', fig, step=self.current_epoch)
+
         self.val_step_outputs.clear()
 
     def configure_optimizers(self):
