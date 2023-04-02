@@ -59,7 +59,7 @@ class CricketClassifier(LightningModule):
         last_step_labels_str = ', '.join(map(str, last_step_labels))
         last_step_predictions_str = ', '.join(map(str, last_step_predictions))
 
-        for logger_instance in self.logger.experiment:
+        for logger_instance in self.logger:
             if isinstance(logger_instance, CometLogger):
                 logger_instance.log_text(f"Last step labels: {last_step_labels_str}", step=self.current_epoch)
                 logger_instance.log_text(f"Last step predictions: {last_step_predictions_str}", step=self.current_epoch)
@@ -107,7 +107,7 @@ class CricketClassifier(LightningModule):
         cax = ax.matshow(conf_mat)
         plt.colorbar(cax)
         
-        for logger_instance in self.logger.logger_iterable:
+        for logger_instance in self.logger:
             if isinstance(logger_instance, TensorBoardLogger):
                 logger_instance.experiment.add_figure('Confusion Matrix', fig, global_step=self.current_epoch)
             elif isinstance(logger_instance, CometLogger):
