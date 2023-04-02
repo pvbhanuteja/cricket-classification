@@ -98,6 +98,7 @@ for epoch in range(num_epochs):
     
     # Log test accuracy to TensorBoard
     writer.add_scalar("Test Accuracy", accuracy, epoch)
+    print(f"Test Accuracy: {accuracy:.4f} Epoch [{epoch + 1}/{num_epochs}]")
     
     if accuracy > best_test_acc:
         best_test_acc = accuracy
