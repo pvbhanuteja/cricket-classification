@@ -7,6 +7,8 @@ from preprocess import SR
 from transformers import AutoFeatureExtractor, ASTForAudioClassification
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
+from pytorch_lightning.callbacks import LearningRateMonitor
+from torch.optim.lr_scheduler import OneCycleLR
 from tqdm import tqdm
 from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 import matplotlib.pyplot as plt
@@ -109,8 +111,15 @@ class CricketClassifier(LightningModule):
         self.val_step_outputs.clear()
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=1e-4)
-        return optimizer
+        optimizer = optim.Adam(self.parameters(), lr=3e-5)
+        num_training_steps = len(train_loader) * self.trainer.max_epochs
+        warmup_steps = int(num_training_steps * 0.1)
+        scheduler = {
+            'scheduler': OneCycleLR(optimizer, max_lr=3e-5, total_steps=num_training_steps, anneal_strategy='linear', pct_start=warmup_steps/num_training_steps, div_factor=25.0, final_div_factor=10000.0),
+            'interval': 'step',
+            'frequency': 1,
+        }
+        return [optimizer], [scheduler]
 
 # Rest of the code remains the same
 
@@ -137,7 +146,7 @@ test_set = CustomDataset(data_path='./data/final_features/test/cricket_data_feat
 
 # Initialize the LightningModule
 classifier = CricketClassifier(label2id, id2label, num_classes)
-
+lr_monitor = LearningRateMonitor(logging_interval="step")
 # Set up TensorBoard logger
 tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
 # comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
@@ -148,7 +157,9 @@ trainer = Trainer(
     accelerator="gpu",
     strategy="ddp",
     logger=tb_logger,
-    gradient_clip_val=1.0
+    gradient_clip_val=4.0,
+    accumulate_grad_batches=4,
+    callbacks=[lr_monitor]
 )
 num_workers = 40  # or another value based on your system's specifications
 train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=num_workers)
