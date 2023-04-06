@@ -11,7 +11,7 @@ import argparse
 SR = 16000
 SECONDS_TO_TRIM = 10
 SECONDS_TO_OVERLAP = 5
-NUM_PROCESS = 1  # set to the number of CPU cores in the machine
+NUM_PROCESS = 40  # set to the number of CPU cores in the machine
 
 torch.set_num_threads(1)
 
