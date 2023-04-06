@@ -89,7 +89,9 @@ def extract_data_chunks(wav, label_name):
     return data
 
 
-def main(wav_dir, save_dir):
+def main(input_dir, save_dir):
+    global wav_dir
+    wav_dir = input_dir
     futures = []
     data = []
 

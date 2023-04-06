@@ -28,7 +28,7 @@ def main(input_dir, output_dir):
     all_processed_samples = process_samples_in_batches(samples, 16)
     print("len of all_processed_samples: ", len(all_processed_samples))
     print("shape of all_processed_samples: ", all_processed_samples[0]['array'].shape, all_processed_samples[0]['label'])
-    torch.save(all_processed_samples, output_dir)
+    torch.save(all_processed_samples, output_dir + 'cricket_data_feature_extracted.pt')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
