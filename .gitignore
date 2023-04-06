@@ -7,3 +7,10 @@ __pycache__/
 cricket_data_feature_extracted.pt
 sdata/
 lightning_logs/
+raw_all_data/
+sdata1/
+test.py
+inference.py
+1_pre.py
+2_pre.py
+pre_process.py

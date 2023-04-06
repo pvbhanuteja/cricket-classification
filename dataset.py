@@ -8,10 +8,10 @@ class CustomDataset(Dataset):
         # If label2id and id2label are not provided, create default mappings.
         if type == 'main':
             for item in self.data_list:
-                item['label'] = item['label'].split(" ")[-1]
+                item['label'] = item['label'].split(" ")[0]
         else:
             for item in self.data_list:
-                item['label'] = item['label'].split(" ")[0]+"-"+item['label'].split(" ")[1]
+                item['label'] = item['label'].split(" ")[1]
         labels = sorted(set([item['label'] for item in self.data_list]))
         label2id = {label: idx for idx, label in enumerate(labels)}
         id2label = {idx: label for label, idx in label2id.items()}    

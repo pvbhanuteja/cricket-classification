@@ -1,16 +1,12 @@
-from transformers import AutoFeatureExtractor
 import torch
 import numpy as np
+from transformers import AutoFeatureExtractor
+import argparse
 
 feature_extractor = AutoFeatureExtractor.from_pretrained(
     "MIT/ast-finetuned-audioset-10-10-0.4593"
 )
 
-samples = torch.load("./cricket_data.pt")
-print("len of samples: ", len(samples))
-print("shape of samples: ", samples[0]['array'].shape, samples[0]['label'], samples[0]['array'].dtype)
-
-# Function to process samples in batches
 def process_samples_in_batches(samples, batch_size):
     all_processed_samples = []
     for i in range(0, len(samples), batch_size):
@@ -27,9 +23,17 @@ def process_samples_in_batches(samples, batch_size):
             all_processed_samples.append(processed_sample)
     return all_processed_samples
 
-# Process 16 batches at once
-batch_size = 16
-all_processed_samples = process_samples_in_batches(samples, batch_size)
-print("len of all_processed_samples: ", len(all_processed_samples))
-print("shape of all_processed_samples: ", all_processed_samples[0]['array'].shape, all_processed_samples[0]['label'])
-torch.save(all_processed_samples, "./cricket_data_feature_extracted.pt")
+def main(input_dir, output_dir):
+    samples = torch.load(input_dir)
+    all_processed_samples = process_samples_in_batches(samples, 16)
+    print("len of all_processed_samples: ", len(all_processed_samples))
+    print("shape of all_processed_samples: ", all_processed_samples[0]['array'].shape, all_processed_samples[0]['label'])
+    torch.save(all_processed_samples, output_dir)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_dir", help="Directory containing the input data")
+    parser.add_argument("output_dir", help="Directory to save the processed data")
+    args = parser.parse_args()
+
+    main(args.input_dir, args.output_dir)
