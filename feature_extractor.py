@@ -10,8 +10,14 @@ feature_extractor = AutoFeatureExtractor.from_pretrained(
 
 def process_samples_in_batches(samples, batch_size):
     all_processed_samples = []
-    for i in tqdm(range(0, len(samples), batch_size), desc="Processing batches"):
-        batch_samples = samples[i:i + batch_size]
+    num_samples = len(samples)
+    num_batches = int(np.ceil(num_samples / float(batch_size)))
+    
+    for i in tqdm(range(num_batches), desc="Processing batches"):
+        start = i * batch_size
+        end = min(start + batch_size, num_samples)
+        batch_samples = samples[start:end]
+        
         arrays = [sample['array'] for sample in batch_samples]
         inputs = feature_extractor(
             arrays, sampling_rate=16000, return_tensors="np"
