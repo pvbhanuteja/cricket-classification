@@ -114,8 +114,8 @@ def main(input_dir, save_dir):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_dir", help="Directory containing the WAV files", default='./data/vad_processed/train/')
-    parser.add_argument("output_dir", help="Directory to save the vad processed data", default='./data/final_features/train/')
+    parser.add_argument("input_dir", help="Directory containing the WAV files")
+    parser.add_argument("output_dir", help="Directory to save the vad processed data")
     args = parser.parse_args()
     start_time = time.time()
     main(args.input_dir, args.output_dir)
