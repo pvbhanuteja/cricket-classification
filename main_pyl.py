@@ -117,12 +117,13 @@ class CricketClassifier(LightningModule):
 
 # Load the dataset
 train_set = CustomDataset(data_path='./data/final_features/train/cricket_data_feature_extracted.pt', type='main')
-test_set = CustomDataset(data_path='./data/final_features/test/cricket_data_feature_extracted.pt', type='main')
 
 label2id = train_set.label2id
 id2label = train_set.id2label
 pprint.pprint(label2id)
 num_classes = len(label2id)
+
+test_set = CustomDataset(data_path='./data/final_features/test/cricket_data_feature_extracted.pt',label2id=label2id,id2label=id2label ,type='main')
 
 # Set the train-test split ratio
 # train_ratio = 0.8
