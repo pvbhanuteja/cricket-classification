@@ -10,6 +10,7 @@ from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
 from tqdm import tqdm
 from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 import matplotlib.pyplot as plt
+import pprint
 
 class CricketClassifier(LightningModule):
     def __init__(self, label2id, id2label, num_classes):
@@ -115,22 +116,23 @@ class CricketClassifier(LightningModule):
 
 
 # Load the dataset
-dataset = CustomDataset(data_path='cricket_data_feature_extracted.pt', type='main')
-generator = torch.Generator().manual_seed(42)
+train_set = CustomDataset(data_path='data/final_features/train/cricket_data_feature_extracted.pt', type='main')
+test_set = CustomDataset(data_path='data/final_features/test/cricket_data_feature_extracted.pt', type='main')
 
-label2id = dataset.label2id
-id2label = dataset.id2label
-
+label2id = train_set.label2id
+id2label = train_set.id2label
+pprint.pprint(label2id)
 num_classes = len(label2id)
 
 # Set the train-test split ratio
-train_ratio = 0.8
-train_size = int(train_ratio * len(dataset))
-test_size = len(dataset) - train_size
+# train_ratio = 0.8
+# train_size = int(train_ratio * len(dataset))
+# test_size = len(dataset) - train_size
 
 # Split the dataset into train and test sets
-train_set, test_set = random_split(
-    dataset, [train_size, test_size], generator=generator)
+# generator = torch.Generator().manual_seed(42)
+# train_set, test_set = random_split(
+#     dataset, [train_size, test_size], generator=generator)
 
 # Initialize the LightningModule
 classifier = CricketClassifier(label2id, id2label, num_classes)
