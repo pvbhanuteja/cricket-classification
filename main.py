@@ -161,7 +161,7 @@ classifier = CricketClassifier(label2id, id2label, num_classes)
 lr_monitor = LearningRateMonitor(logging_interval="step")
 # Set up TensorBoard logger
 tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
-tb_logger.add_text("id2label", json.dumps(id2label), 0)
+tb_logger.log_hyperparams({"id2label" : json.dumps(id2label)})
 # comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
 # Initialize the Trainer
 trainer = Trainer(
