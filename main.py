@@ -53,18 +53,32 @@ class CricketClassifier(LightningModule):
         metrics = {"train_loss_epoch": avg_loss.item()}
         self.logger.log_metrics(metrics, step=self.current_epoch)
         
-        # Log labels and predictions of the last step in the current epoch
-        last_step_outputs = outputs[-1]
-        last_step_labels = last_step_outputs["labels"].tolist()
-        last_step_predictions = torch.argmax(last_step_outputs["predictions"], dim=1).tolist()
+        all_labels = torch.cat([x['labels'] for x in outputs], dim=0)
+        all_predictions = torch.cat([x['predictions'] for x in outputs], dim=0)
 
-        # Log the last_step_labels and last_step_predictions as text
-        last_step_labels_str = ', '.join(map(str, last_step_labels))
-        last_step_predictions_str = ', '.join(map(str, last_step_predictions))
+        # Calculate accuracy
+        accuracy = (all_predictions == all_labels).sum().item() / all_labels.size(0)
 
+        # Calculate precision, recall, F1-score, and confusion matrix
+        precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels.cpu(), all_predictions.cpu(), average='macro')
+        conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
 
-        self.logger.experiment.add_text(f"Last step labels", last_step_labels_str, global_step=self.current_epoch)
-        self.logger.experiment.add_text(f"Last step predictions", last_step_predictions_str, global_step=self.current_epoch)
+        # Log metrics using logger.log_metrics method
+        metrics = {
+            "train/accuracy": accuracy,
+            "train/precision": precision,
+            "train/recall": recall,
+            "train/f1_score": f1_score,
+        }
+        self.logger.log_metrics(metrics, step=self.global_step)
+
+        # # Log confusion matrix (as an image)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(conf_mat)
+        plt.colorbar(cax)
+        
+        self.logger.experiment.add_image('Confusion Matrix-Train', fig, global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
         self.training_step_outputs.clear()
@@ -89,7 +103,7 @@ class CricketClassifier(LightningModule):
 
         # Calculate precision, recall, F1-score, and confusion matrix
         precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels.cpu(), all_predictions.cpu(), average='macro')
-        # conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
+        conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
 
         # Log metrics using logger.log_metrics method
         metrics = {
@@ -101,12 +115,12 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # cax = ax.matshow(conf_mat)
-        # plt.colorbar(cax)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(conf_mat)
+        plt.colorbar(cax)
         
-        # self.logger.experiment.add_image('Confusion Matrix', fig, global_step=self.current_epoch)
+        self.logger.experiment.add_image('Confusion Matrix-Val', fig, global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
