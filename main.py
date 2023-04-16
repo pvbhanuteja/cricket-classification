@@ -78,20 +78,20 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
-        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
-        fig, ax = plt.subplots(figsize=(12, 7))
-        sn.heatmap(df_cm, annot=True, ax=ax)
+        # cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        # df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
+        # fig, ax = plt.subplots(figsize=(12, 7))
+        # sn.heatmap(df_cm, annot=True, ax=ax)
 
-        # Convert the figure to a numpy array
-        canvas = FigureCanvas(fig)
-        canvas.draw()
-        img_array = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
-        img_array = img_array.reshape(canvas.get_width_height()[::-1] + (3,))
+        # # Convert the figure to a numpy array
+        # canvas = FigureCanvas(fig)
+        # canvas.draw()
+        # img_array = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
+        # img_array = img_array.reshape(canvas.get_width_height()[::-1] + (3,))
 
-        # Close the figure to free resources
-        plt.close(fig)
-        self.logger.experiment.add_image('Confusion Matrix-Train', img_array , global_step=self.current_epoch)
+        # # Close the figure to free resources
+        # plt.close(fig)
+        # self.logger.experiment.add_image('Confusion Matrix-Train', img_array , global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
         self.training_step_outputs.clear()
@@ -127,20 +127,20 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
-        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
-        fig, ax = plt.subplots(figsize=(12, 7))
-        sn.heatmap(df_cm, annot=True, ax=ax)
+        # cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        # df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
+        # fig, ax = plt.subplots(figsize=(12, 7))
+        # sn.heatmap(df_cm, annot=True, ax=ax)
 
-        # Convert the figure to a numpy array
-        canvas = FigureCanvas(fig)
-        canvas.draw()
-        img_array = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
-        img_array = img_array.reshape(canvas.get_width_height()[::-1] + (3,))
+        # # Convert the figure to a numpy array
+        # canvas = FigureCanvas(fig)
+        # canvas.draw()
+        # img_array = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
+        # img_array = img_array.reshape(canvas.get_width_height()[::-1] + (3,))
 
-        # Close the figure to free resources
-        plt.close(fig) 
-        self.logger.experiment.add_image('Confusion Matrix-Val', img_array , global_step=self.current_epoch)
+        # # Close the figure to free resources
+        # plt.close(fig) 
+        # self.logger.experiment.add_image('Confusion Matrix-Val', img_array , global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
