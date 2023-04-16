@@ -43,12 +43,12 @@ class CricketClassifier(LightningModule):
         outputs = self(inputs)
         logits = outputs.logits
         loss = self.criterion(logits, labels)
-
+        _, predicted = torch.max(logits, dim=1)
         # Log and print gradients
         # self.log_gradients()
         metrics = {"train_loss_step": loss.item()}
         self.logger.log_metrics(metrics, step=self.global_step)
-        train_outputs = {"loss": loss, "labels": labels, "predictions": logits}
+        train_outputs = {"loss": loss, "labels": labels, "predictions": predicted}
         self.training_step_outputs.append(train_outputs)
         # print(f"Train Loss (step): {loss:.4f}", end="\r")
         return train_outputs
