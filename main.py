@@ -77,7 +77,7 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy(),labels=self.sorted_labels)
         df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index=self.sorted_labels, columns=self.sorted_labels)
         plt.figure(figsize=(12, 7))    
         self.logger.experiment.add_image('Confusion Matrix-Train', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
@@ -116,8 +116,7 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        # # Log confusion matrix (as an image)
-        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy(), labels=self.sorted_labels)
         df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index=self.sorted_labels, columns=self.sorted_labels)
         plt.figure(figsize=(12, 7))    
         self.logger.experiment.add_image('Confusion Matrix-Val', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
