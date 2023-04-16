@@ -13,6 +13,8 @@ from pytorch_lightning.callbacks import LearningRateMonitor
 from torch.optim.lr_scheduler import OneCycleLR
 from tqdm import tqdm
 from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
+import seaborn as sn
+import pandas as pd
 import matplotlib.pyplot as plt
 import pprint
 
@@ -24,6 +26,7 @@ class CricketClassifier(LightningModule):
         self.criterion = nn.CrossEntropyLoss()
         self.training_step_outputs = []
         self.val_step_outputs = []
+        self.sorted_labels = [label for label, value in sorted(label2id.items(), key=lambda x: x[1])]
 
     def forward(self, x):
         return self.model(x)
@@ -63,7 +66,6 @@ class CricketClassifier(LightningModule):
 
         # Calculate precision, recall, F1-score, and confusion matrix
         precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels.cpu(), all_predictions.cpu(), average='macro')
-        conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
 
         # Log metrics using logger.log_metrics method
         metrics = {
@@ -75,18 +77,10 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        cax = ax.matshow(conf_mat)
-        plt.colorbar(cax)
-        
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png')
-        buf.seek(0)
-        img = Image.open(buf)
-        img_np = np.array(img)
-        
-        self.logger.experiment.add_image('Confusion Matrix-Train', img_np, global_step=self.current_epoch)
+        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index=self.sorted_labels, columns=self.sorted_labels)
+        plt.figure(figsize=(12, 7))    
+        self.logger.experiment.add_image('Confusion Matrix-Train', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
         self.training_step_outputs.clear()
@@ -111,7 +105,6 @@ class CricketClassifier(LightningModule):
 
         # Calculate precision, recall, F1-score, and confusion matrix
         precision, recall, f1_score, _ = precision_recall_fscore_support(all_labels.cpu(), all_predictions.cpu(), average='macro')
-        conf_mat = confusion_matrix(all_labels.cpu(), all_predictions.cpu())
 
         # Log metrics using logger.log_metrics method
         metrics = {
@@ -123,18 +116,11 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        cax = ax.matshow(conf_mat)
-        plt.colorbar(cax)
-        
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png')
-        buf.seek(0)
-        img = Image.open(buf)
-        img_np = np.array(img)
-        
-        self.logger.experiment.add_image('Confusion Matrix-Val', img_np, global_step=self.current_epoch)
+        # # Log confusion matrix (as an image)
+        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index=self.sorted_labels, columns=self.sorted_labels)
+        plt.figure(figsize=(12, 7))    
+        self.logger.experiment.add_image('Confusion Matrix-Val', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
