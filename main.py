@@ -1,4 +1,6 @@
-import os
+import os, io
+import numpy as np
+from PIL import Image
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader, random_split
@@ -78,7 +80,13 @@ class CricketClassifier(LightningModule):
         cax = ax.matshow(conf_mat)
         plt.colorbar(cax)
         
-        self.logger.experiment.add_image('Confusion Matrix-Train', fig, global_step=self.current_epoch)
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        img = Image.open(buf)
+        img_np = np.array(img)
+        
+        self.logger.experiment.add_image('Confusion Matrix-Train', img_np, global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
         self.training_step_outputs.clear()
@@ -120,7 +128,13 @@ class CricketClassifier(LightningModule):
         cax = ax.matshow(conf_mat)
         plt.colorbar(cax)
         
-        self.logger.experiment.add_image('Confusion Matrix-Val', fig, global_step=self.current_epoch)
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        img = Image.open(buf)
+        img_np = np.array(img)
+        
+        self.logger.experiment.add_image('Confusion Matrix-Val', img_np, global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
