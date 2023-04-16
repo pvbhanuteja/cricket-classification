@@ -2,9 +2,9 @@ import os, torch
 from torch.utils.data import Dataset
 
 class CustomDataset(Dataset):
-    def __init__(self, data_path='./cricket_data.pt', label2id=None, id2label=None, type='main'):
+    def __init__(self, data_path='./cricket_data.pt', label2id=None, id2label=None, type='genus'):
         self.data_list = torch.load(data_path)
-        if type == 'main':
+        if type == 'genus':
             for item in self.data_list:
                 item['label'] = item['label'].split(" ")[0]
         else:

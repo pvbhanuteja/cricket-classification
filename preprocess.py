@@ -64,9 +64,13 @@ def determine_label_name(wav_file):
         else:
             return split_file[2] + " " + split_file[3] + " " + "SINA"
 
+def read_wav_files_from_txt(txt_file):
+    with open(txt_file, 'r') as file:
+        wav_files = [line.strip() for line in file.readlines()]
+    return wav_files
 
 def load_wav_file(wav_file):
-    wav, sample_rate = torchaudio.load(wav_dir + wav_file)
+    wav, sample_rate = torchaudio.load(os.path.join(wav_dir, wav_file))
     wav = wav.mean(dim=0) if wav.ndim > 1 else wav
     if sample_rate != 16000:
         resample_transform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
@@ -89,14 +93,13 @@ def extract_data_chunks(wav, label_name):
     return data
 
 
-def main(input_dir, save_dir):
+def main(wav_dirs, txt_path ,save_dir):
     global wav_dir
-    wav_dir = input_dir
+    wav_dir = wav_dirs
     futures = []
     data = []
-
+    wav_files = read_wav_files_from_txt(txt_path)
     with ProcessPoolExecutor(max_workers=NUM_PROCESS) as ex:
-        wav_files = sorted(os.listdir(wav_dir))
         for wav_file in wav_files:
             futures.append(ex.submit(process_wav_file, wav_file))
 
@@ -114,10 +117,11 @@ def main(input_dir, save_dir):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_dir", help="Directory containing the WAV files")
+    parser.add_argument("wav_dir", help="Directory containing the WAV files")
+    parser.add_argument("txt_file", help="Path to text file containing the list of WAV files")
     parser.add_argument("output_dir", help="Directory to save the vad processed data")
     args = parser.parse_args()
     start_time = time.time()
-    main(args.input_dir, args.output_dir)
+    main(args.wav_dir, args.txt_file, args.output_dir)
     end_time = time.time()
     pprint(f"Execution time: {end_time - start_time:.4f} seconds")
