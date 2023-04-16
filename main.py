@@ -78,8 +78,10 @@ class CricketClassifier(LightningModule):
         # # Log confusion matrix (as an image)
         cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
         df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
-        plt.figure(figsize=(12, 7))    
-        self.logger.experiment.add_image('Confusion Matrix-Train', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
+        plt.figure(figsize=(12, 7))
+        fig_ = sn.heatmap(df_cm, annot=True).get_figure()   
+        plt.close(fig_)
+        self.logger.experiment.add_image('Confusion Matrix-Train', fig_ , global_step=self.current_epoch)
         
         print(f"Train Loss (epoch): {avg_loss:.4f}")
         self.training_step_outputs.clear()
@@ -117,8 +119,10 @@ class CricketClassifier(LightningModule):
         # # Log confusion matrix (as an image)
         cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
         df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
-        plt.figure(figsize=(12, 7))    
-        self.logger.experiment.add_image('Confusion Matrix-Val', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
+        plt.figure(figsize=(12, 7)) 
+        fig_ = sn.heatmap(df_cm, annot=True).get_figure()   
+        plt.close(fig_)   
+        self.logger.experiment.add_image('Confusion Matrix-Val', fig_ , global_step=self.current_epoch)
 
         self.val_step_outputs.clear()
 
