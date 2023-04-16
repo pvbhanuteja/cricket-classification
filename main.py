@@ -1,4 +1,4 @@
-import os, io
+import json
 import numpy as np
 from PIL import Image
 import torch
@@ -26,7 +26,7 @@ class CricketClassifier(LightningModule):
         self.criterion = nn.CrossEntropyLoss()
         self.training_step_outputs = []
         self.val_step_outputs = []
-        self.sorted_labels = [label for label, value in sorted(label2id.items(), key=lambda x: x[1])]
+        self.logger.add_text("id2label", json.dumps(id2label), 0)
 
     def forward(self, x):
         return self.model(x)
@@ -77,8 +77,8 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy(),labels=self.sorted_labels)
-        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index=self.sorted_labels, columns=self.sorted_labels)
+        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
         plt.figure(figsize=(12, 7))    
         self.logger.experiment.add_image('Confusion Matrix-Train', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
         
@@ -116,8 +116,8 @@ class CricketClassifier(LightningModule):
         self.logger.log_metrics(metrics, step=self.global_step)
 
         # # Log confusion matrix (as an image)
-        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy(), labels=self.sorted_labels)
-        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None], index=self.sorted_labels, columns=self.sorted_labels)
+        cf_matrix = confusion_matrix(all_labels.cpu().numpy(), all_predictions.cpu().numpy())
+        df_cm = pd.DataFrame(cf_matrix / np.sum(cf_matrix, axis=1)[:, None])
         plt.figure(figsize=(12, 7))    
         self.logger.experiment.add_image('Confusion Matrix-Val', sn.heatmap(df_cm, annot=True).get_figure(), global_step=self.current_epoch)
 
@@ -162,6 +162,7 @@ classifier = CricketClassifier(label2id, id2label, num_classes)
 lr_monitor = LearningRateMonitor(logging_interval="step")
 # Set up TensorBoard logger
 tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
+
 # comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
 # Initialize the Trainer
 trainer = Trainer(
