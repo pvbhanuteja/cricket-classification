@@ -3,6 +3,7 @@ import numpy as np
 from transformers import AutoFeatureExtractor
 import argparse
 from tqdm import tqdm
+import json
 
 feature_extractor = AutoFeatureExtractor.from_pretrained(
     "MIT/ast-finetuned-audioset-10-10-0.4593"
@@ -45,3 +46,29 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main(args.input_dir, args.output_dir, args.batch_size)
+    
+    # Load the configuration file
+    with open('config.json') as config_file:
+        config = json.load(config_file)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_type', choices=['train', 'test'], required=True, help='Specify whether to process train or test data')
+    parser.add_argument('--data_path', default=None, help='Path to the input data directory')
+    parser.add_argument('--output_path', default=None, help='Path to the output directory')
+    parser.add_argument('--batch_size', type=int, default=config['feature_extractor']['batch_size'], help='Batch size for processing')
+    args = parser.parse_args()
+
+    data_type = args.data_type
+    batch_size = args.batch_size
+    data_path = args.data_path
+    output_path = args.output_path
+
+    if args.data_path is None:
+
+        data_path = config['feature_extractor']['train_data_pt_path'] if data_type == 'train' else config['feature_extractor']['test_data_pt_path']
+
+    if args.output_path is None:
+        
+        output_path = config['feature_extractor']['train_features_output_path'] if data_type == 'train' else config['feature_extractor']['test_features_output_path']
+
+    main(data_path, output_path, batch_size)
