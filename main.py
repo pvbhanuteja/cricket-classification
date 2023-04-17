@@ -1,4 +1,4 @@
-import json
+import json, argparse
 import numpy as np
 from PIL import Image
 import torch
@@ -158,51 +158,60 @@ class CricketClassifier(LightningModule):
 # Rest of the code remains the same
 
 
-# Load the dataset
-train_set = CustomDataset(data_path='./data/final_features/train/cricket_data_feature_extracted.pt', type='genus')
+def main(train_data_path, test_data_path, epochs):
+    # Load the dataset
+    train_set = CustomDataset(data_path=train_data_path, type='genus')
 
-label2id = train_set.label2id
-id2label = train_set.id2label
-pprint.pprint(label2id)
-num_classes = len(label2id)
+    label2id = train_set.label2id
+    id2label = train_set.id2label
+    pprint.pprint(label2id)
+    num_classes = len(label2id)
 
-test_set = CustomDataset(data_path='./data/final_features/test/cricket_data_feature_extracted.pt',label2id=label2id,id2label=id2label ,type='genus')
+    test_set = CustomDataset(data_path=test_data_path, label2id=label2id, id2label=id2label, type='genus')
 
-# Set the train-test split ratio
-# train_ratio = 0.8
-# train_size = int(train_ratio * len(dataset))
-# test_size = len(dataset) - train_size
+    # Initialize the LightningModule
+    classifier = CricketClassifier(label2id, id2label, num_classes)
+    lr_monitor = LearningRateMonitor(logging_interval="step")
+    # Set up TensorBoard logger
+    tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
+    tb_logger.log_hyperparams({"id2label" : json.dumps(id2label)})
+    # comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
+    # Initialize the Trainer
+    trainer = Trainer(
+        max_epochs=epochs,
+        devices=2, 
+        accelerator="gpu",
+        strategy="ddp",
+        logger=tb_logger,
+        gradient_clip_val=4.0,
+        accumulate_grad_batches=4,
+        callbacks=[lr_monitor]
+    )
+    num_workers = 40  # or another value based on your system's specifications
+    train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=num_workers)
+    test_loader = DataLoader(test_set, batch_size=4, shuffle=False, num_workers=num_workers)
 
-# Split the dataset into train and test sets
-# generator = torch.Generator().manual_seed(42)
-# train_set, test_set = random_split(
-#     dataset, [train_size, test_size], generator=generator)
+    # Train the model
+    trainer.fit(classifier, train_loader, test_loader)
 
-# Initialize the LightningModule
-classifier = CricketClassifier(label2id, id2label, num_classes)
-lr_monitor = LearningRateMonitor(logging_interval="step")
-# Set up TensorBoard logger
-tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
-tb_logger.log_hyperparams({"id2label" : json.dumps(id2label)})
-# comet_logger = CometLogger(api_key=os.environ.get("COMET_API_KEY"),save_dir="lightning_logs_comet", project_name="cricket_experiment")
-# Initialize the Trainer
-trainer = Trainer(
-    max_epochs=100,
-    devices=2, 
-    accelerator="gpu",
-    strategy="ddp",
-    logger=tb_logger,
-    gradient_clip_val=4.0,
-    accumulate_grad_batches=4,
-    callbacks=[lr_monitor]
-)
-num_workers = 40  # or another value based on your system's specifications
-train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=num_workers)
-test_loader = DataLoader(test_set, batch_size=4, shuffle=False, num_workers=num_workers)
+    # Save the best model
+    model_save_path = f"{tb_logger.log_dir}/best_finetuned_ast_cricket_data.pt"
+    torch.save(classifier.model.state_dict(), model_save_path)
 
-# Train the model
-trainer.fit(classifier, train_loader, test_loader)
 
-# Save the best model
-model_save_path = f"{tb_logger.log_dir}/best_finetuned_ast_cricket_data.pt"
-torch.save(classifier.model.state_dict(), model_save_path)
+if __name__ == '__main__':
+    # Load the configuration file
+    with open('config.json') as config_file:
+        config = json.load(config_file)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train_data_path', default=config['main']['train_data_path'] ,help='Path to the train data directory')
+    parser.add_argument('--test_data_path', default=config['main']['test_data_path'] ,help='Path to the test data directory')
+    parser.add_argument('--epochs', default=config['main']['epochs'] ,help='Number of epochs to train the model')
+    args = parser.parse_args()
+
+    train_data_path = args.train_data_path
+    test_data_path = args.test_data_path
+    epochs = args.epochs
+
+    main(train_data_path, test_data_path, int(epochs))

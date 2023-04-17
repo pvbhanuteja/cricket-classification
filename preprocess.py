@@ -5,13 +5,12 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pprint import pprint
 from tqdm import tqdm
 import time
-import argparse
+import argparse, json
 
-
-SR = 16000
-SECONDS_TO_TRIM = 10
-SECONDS_TO_OVERLAP = 5
-NUM_PROCESS = 40  # set to the number of CPU cores in the machine
+global SR
+global SECONDS_TO_TRIM
+global SECONDS_TO_OVERLAP
+global NUM_PROCESS
 
 torch.set_num_threads(1)
 
@@ -116,12 +115,40 @@ def main(wav_dirs, txt_path ,save_dir):
 #     main()
 
 if __name__ == '__main__':
+    with open('config.json') as config_file:
+        config = json.load(config_file)
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("wav_dir", help="Directory containing the WAV files")
-    parser.add_argument("txt_file", help="Path to text file containing the list of WAV files")
-    parser.add_argument("output_dir", help="Directory to save the vad processed data")
+    parser.add_argument('--data_path', default=config['preprocess']['raw_data_path'], help='Path to the raw data directory')
+    parser.add_argument('--data_type', choices=['train', 'test'], required=True, help='Specify whether to process train or test data')
+    parser.add_argument('--txt_path', help='Path to the train.txt or test.txt file')
+    parser.add_argument('--output_path', help='Path to the output directory')
     args = parser.parse_args()
+
+    data_path = args.data_path
+    data_type = args.data_type
+    txt_path = args.txt_path
+    output_path = args.output_path
+
+    if txt_path is None:
+        if data_type == 'train':
+            txt_path = config['preprocess']['train_txt_path']
+        else:
+            txt_path = config['preprocess']['test_txt_path']
+
+    if output_path is None:
+        if data_type == 'train':
+            output_path = config['preprocess']['train_output_path']
+        else:
+            output_path = config['preprocess']['test_output_path']
+    
+    # Replace the constant values with values from the config file
+    SR = config['global_parameters']['SR']
+    SECONDS_TO_TRIM = config['global_parameters']['SECONDS_TO_TRIM']
+    SECONDS_TO_OVERLAP = config['global_parameters']['SECONDS_TO_OVERLAP']
+    NUM_PROCESS = config['global_parameters']['NUM_PROCESS']
+    
     start_time = time.time()
-    main(args.wav_dir, args.txt_file, args.output_dir)
+    main(data_path, txt_path, output_path)
     end_time = time.time()
-    pprint(f"Execution time: {end_time - start_time:.4f} seconds")
+    print(f"Execution time: {end_time - start_time:.4f} seconds")

@@ -4,4 +4,3 @@ datasets
 tqdm
 tensorboard
 tensorboardX
-comet-ml

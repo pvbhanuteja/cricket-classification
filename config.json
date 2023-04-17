@@ -1,0 +1,28 @@
+{
+    "preprocess": {
+      "train_data_path": "./data/raw_all_data",
+      "train_txt_path": "./data/train.txt",
+      "train_output_path": "./data/vad_processed/train/",
+      "test_txt_path": "./data/test.txt",
+      "test_output_path": "./data/vad_processed/test/"
+    },
+    "feature_extractor": {
+      "train_data_pt_path": "./data/vad_processed/train/data.pt",
+      "train_features_output_path": "./data/final_features/train/",
+      "test_data_pt_path": "./data/vad_processed/test/data.pt",
+      "test_features_output_path": "./data/final_features/test/",
+      "batch_size": 64
+    },
+    "main": {
+      "train_data_path": "./data/final_features/train/cricket_data_feature_extracted.pt",
+      "test_data_path": "./data/final_features/test/cricket_data_feature_extracted.pt",
+      "epochs": 100
+    },
+    "global_parameters": {
+        "SR": 16000,
+        "SECONDS_TO_TRIM": 10,
+        "SECONDS_TO_OVERLAP": 5,
+        "NUM_PROCESS": 40
+      }
+  }
+  
