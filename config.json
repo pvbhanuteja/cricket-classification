@@ -1,6 +1,6 @@
 {
     "preprocess": {
-      "train_data_path": "./data/raw_all_data",
+      "raw_data_path": "./data/raw_all_data",
       "train_txt_path": "./data/train.txt",
       "train_output_path": "./data/vad_processed/train/",
       "test_txt_path": "./data/test.txt",

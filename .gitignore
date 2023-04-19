@@ -1,5 +1,5 @@
 venv/
-data/
+data/raw_all_data/*
 data.zip
 runs/
 cricket_data.pt
@@ -14,3 +14,4 @@ inference.py
 1_pre.py
 2_pre.py
 pre_process.py
+experiment_scripts/
