@@ -5,7 +5,6 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader, random_split
 from dataset import CustomDataset
-from preprocess import SR
 from transformers import AutoFeatureExtractor, ASTForAudioClassification
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
@@ -18,16 +17,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import pprint
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from PIL import Image
 
 class CricketClassifier(LightningModule):
-    def __init__(self, label2id, id2label, num_classes):
+    def __init__(self, label2id, id2label, num_classes, train_loader_len, test_loader_len):
         super().__init__()
         self.model = ASTForAudioClassification.from_pretrained(
             "MIT/ast-finetuned-audioset-10-10-0.4593", label2id=label2id, id2label=id2label ,num_labels=num_classes,ignore_mismatched_sizes=True)
         self.criterion = nn.CrossEntropyLoss()
         self.training_step_outputs = []
         self.val_step_outputs = []
+        self.train_dataloader_len = train_loader_len
+        self.test_dataloader_len = test_loader_len
 
     def forward(self, x):
         return self.model(x)
@@ -146,7 +146,7 @@ class CricketClassifier(LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=3e-5)
-        num_training_steps = len(train_loader) * self.trainer.max_epochs
+        num_training_steps = len(self.train_dataloader_len) * self.trainer.max_epochs
         warmup_steps = int(num_training_steps * 0.1)
         scheduler = {
             'scheduler': OneCycleLR(optimizer, max_lr=3e-5, total_steps=num_training_steps, anneal_strategy='linear', pct_start=warmup_steps/num_training_steps, div_factor=25.0, final_div_factor=10000.0),
@@ -169,8 +169,6 @@ def main(train_data_path, test_data_path, epochs):
 
     test_set = CustomDataset(data_path=test_data_path, label2id=label2id, id2label=id2label, type='genus')
 
-    # Initialize the LightningModule
-    classifier = CricketClassifier(label2id, id2label, num_classes)
     lr_monitor = LearningRateMonitor(logging_interval="step")
     # Set up TensorBoard logger
     tb_logger = TensorBoardLogger("lightning_logs", name="cricket_experiment")
@@ -190,7 +188,8 @@ def main(train_data_path, test_data_path, epochs):
     num_workers = 40  # or another value based on your system's specifications
     train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_set, batch_size=4, shuffle=False, num_workers=num_workers)
-
+        # Initialize the LightningModule
+    classifier = CricketClassifier(label2id, id2label, num_classes, len(train_loader), len(test_loader))
     # Train the model
     trainer.fit(classifier, train_loader, test_loader)
 

@@ -39,14 +39,6 @@ def main(input_dir, output_dir, batch_size=16):
     torch.save(all_processed_samples, output_dir + 'cricket_data_feature_extracted.pt')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input_dir", help="Directory containing the input data")
-    parser.add_argument("output_dir", help="Directory to save the processed data")
-    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for processing")
-    args = parser.parse_args()
-
-    main(args.input_dir, args.output_dir, args.batch_size)
-    
     # Load the configuration file
     with open('config.json') as config_file:
         config = json.load(config_file)
