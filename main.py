@@ -146,7 +146,7 @@ class CricketClassifier(LightningModule):
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=3e-5)
-        num_training_steps = len(self.train_dataloader_len) * self.trainer.max_epochs
+        num_training_steps = self.train_dataloader_len * self.trainer.max_epochs
         warmup_steps = int(num_training_steps * 0.1)
         scheduler = {
             'scheduler': OneCycleLR(optimizer, max_lr=3e-5, total_steps=num_training_steps, anneal_strategy='linear', pct_start=warmup_steps/num_training_steps, div_factor=25.0, final_div_factor=10000.0),
