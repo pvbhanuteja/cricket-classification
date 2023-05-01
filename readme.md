@@ -35,6 +35,7 @@ cricket songs classification
 
 - [📚 Table of Contents](#-table-of-contents)
 - [📍Overview](#overview)
+  - [Results](#results)
 - [⚙️ Project Structure](#️-project-structure)
 - [💻 Modules](#-modules)
 - [🚀 Getting Started](#-getting-started)
@@ -55,6 +56,17 @@ cricket songs classification
   
 
 The Cricket Classification GitHub project is an audio classification system that utilizes deep learning techniques to identify and categorize cricket species based on their sound recordings. The project leverages the PyTorch Lightning framework and the ASTForAudioClassification model from Hugging Face's Transformers library to build and train the classifier. The code includes data preprocessing, model training, and evaluation, providing a complete end-to-end solution for cricket sound classification tasks.
+
+### Results
+
+| Experiment              | Test Accuracy |
+|-------------------------|---------------|
+| 5 genus classification  | 97.00%        |
+| 8 genus classification  | 94.40%        |
+| 8 genus classification  | 89.51%        |
+
+These results are obtained on test data using an 80:20 train:test split. The train and test waveforms are split into 10-second segments with a 5-second overlap.
+
 
 
 ---
