@@ -2,7 +2,7 @@
 
 Follow these steps to set up and run the cricket classification project using Singularity:
 
-1. **(Optional)** Create your own `.sif` image following the instructions at the [HPRC TAMU Wiki](https://hprc.tamu.edu/wiki/SW:Singularity). Alternatively, you can reuse the `dl.sif` provided. I Used this [Docker Image](https://github.com/pvbhanuteja/gs-dl-baseimage-cloudflared)
+1. **(Optional)** Create your own `.sif` image following the instructions at the [HPRC TAMU Wiki](https://hprc.tamu.edu/wiki/SW:Singularity) I Used this [Docker Image](https://github.com/pvbhanuteja/gs-dl-baseimage-cloudflared). Alternatively, you can reuse the `dl.sif` provided.
 
 2. Change the working directory:
         ```
