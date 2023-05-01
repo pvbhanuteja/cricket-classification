@@ -63,7 +63,7 @@ The Cricket Classification GitHub project is an audio classification system that
 |-------------------------|---------------|
 | 5 genus classification  | 97.00%        |
 | 8 genus classification  | 94.40%        |
-| 8 genus classification  | 89.51%        |
+| 10 genus classification  | 89.51%        |
 
 These results are obtained on test data using an 80:20 train:test split. The train and test waveforms are split into 10-second segments with a 5-second overlap.
 
